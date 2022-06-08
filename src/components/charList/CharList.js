@@ -1,7 +1,7 @@
 import {useState, useEffect, useRef} from 'react';
 import PropTypes from 'prop-types';
 
-import MarvelService from '../../services/MarvelServices';
+import useMarvelService from '../../services/MarvelServices';
 import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
 
@@ -10,27 +10,20 @@ import './charList.scss';
 const CharList = (props) => {
 
     const [charList, setCharlist] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(false);
     const [newItemLoading, setNewItemLoading] = useState(false);
     const [offset, setOffset] = useState(210);
     const [charEnded, setCharEnded] = useState(false);
 
-    const marvelService = new MarvelService();
+    const {loading, error, getAllCharacters} =  useMarvelService();
 
     useEffect(() => {
-        onRequest();// useEffect сработает после рендера, и функцию объявленную ниже можно запустить(не будет ошибки)
+        onRequest(offset, true);// useEffect сработает после рендера, и функцию объявленную ниже можно запустить(не будет ошибки)
     }, [])
 
-    const onRequest = (offset) => {
-        onCharListLoading();
-        marvelService.getAllCharacters(offset)
+    const onRequest = (offset, initial) => {
+        initial ? setNewItemLoading(false) : setNewItemLoading(true);
+        getAllCharacters(offset)
             .then(onCharListLoaded)
-            .catch(onError)
-    }
-
-    const onCharListLoading = () => {
-        setNewItemLoading(true);
     }
 
     const onCharListLoaded = (newCharList) => {
@@ -40,15 +33,9 @@ const CharList = (props) => {
         }
 
         setCharlist(charList => [...charList, ...newCharList]);
-        setLoading(loading => false);
         setNewItemLoading(newItemLoading => false);
         setOffset(offset => offset + 9);
         setCharEnded(charEnded => ended);
-    }
-
-    const onError = () => {
-        setLoading(loading => false);
-        setError(error => true);
     }
 
     const itemRefs = useRef([]);
@@ -93,15 +80,12 @@ const CharList = (props) => {
 
     const spinner = loading ? <Spinner/> : null;
     const errorMessage = error ? <ErrorMessage/> : null;
-    const content = !(loading || error) ? items : null;
 
-    return (
+     return (
         <div className="char__list">
-            <ul className="char__grid">
-                {spinner}
-                {errorMessage}
-                {content}
-            </ul>
+            {errorMessage}
+            {spinner}
+            {items}
             <button 
                 className="button button__main button__long"
                 disabled={newItemLoading}
